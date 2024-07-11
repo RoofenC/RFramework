@@ -5,6 +5,12 @@
 
 RFramework is designed to enhance code structure and development efficiency by organizing code into distinct layers. Each layer has specific responsibilities and restrictions, ensuring a clean and maintainable codebase.
 
+
+
+## Currently in the development and validation phase
+
+
+
 ## Layers
 
 ### Module Layer
@@ -39,7 +45,7 @@ RFramework is designed to enhance code structure and development efficiency by o
 
 ### Model Layer
 
-**Restrictions**: Cannot access any other layers.
+**Restrictions**: Only module layers can be used.
 
 **Purpose**: Separates and manages data.
 
