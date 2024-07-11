@@ -5,14 +5,14 @@ using Object = System.Object;
 
 namespace RFramework
 {
-	public abstract class ROverall : IRInitWill
+	public abstract class ROverall
 	{
 		public abstract void OnInit();
 		
 		[AuthorizedAccessRCore]
-		protected void SignUpSystem<T>(Type _system) where T : RSystem, IRoofen, new() => RCore.SignUp<T>(_system);
+		protected void SignUpSystem<T>() => RCore.SignUp<T>();
 		
 		[AuthorizedAccessRCore]
-		protected void SignUpModel<T>(Type _model) where T : RModel, IRoofen, new() => RCore.SignUp<T>(_model);
+		protected void SignUpModel<T>() => RCore.SignUp<T>();
 	}
 }

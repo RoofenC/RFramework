@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.VisualScripting;
 
 namespace RFramework
@@ -8,23 +9,53 @@ namespace RFramework
 	{
 		private static Dictionary<Type, Object> mObjects = new Dictionary<Type, object>();
 
-		public static void SignUp<T>(Type _type) where T : class, IRoofen, new()
+		static RCore()
 		{
-			Authorized();
+			Entry();
+		}
+		
+		private static void Entry()
+		{
+			var type = FindSubclassesOf<ROverall>();
+
+			if(type == null) throw new InvalidOperationException($"No entry to the program");
 			
-			if (mObjects.ContainsKey(_type))
+			foreach (var overall in type)
 			{
-				throw new InvalidOperationException($"The type {_type} has already signed up.");
+				var rOverall = (ROverall)Activator.CreateInstance(overall);
+				rOverall.OnInit();
 			}
-
-			var entity = Activator.CreateInstance(_type);
-			
-			if (entity is IRInitWill init) init.OnInit();
-
-			mObjects.Add(_type,entity);
 		}
 
-		public static T Get<T>() where T : class, IRoofen
+		public static void SignUp<T>()
+		{
+			Authorized();
+
+			var type = FindSubclassOf<T>();
+
+			if (type == null)
+			{
+				type = typeof(T);
+			}
+
+			if (!typeof(RSystem).IsAssignableFrom(type) && !typeof(RModel).IsAssignableFrom(type))
+			{
+				throw new InvalidOperationException($"The type {type.FullName} must be a subclass of RSystem or RModel.");
+			}
+			
+			if (mObjects.ContainsKey(type))
+			{
+				throw new InvalidOperationException($"The type {type} has already signed up.");
+			}
+
+			var entity = Activator.CreateInstance(type);
+
+			if (entity is IRInitWill init) init.OnInit();
+
+			mObjects.Add(type, (T)entity);
+		}
+
+		public static T Access<T>() where T : class, IRoofen
 		{
 			Authorized();
 			
@@ -79,6 +110,43 @@ namespace RFramework
 			{
 				throw new InvalidOperationException($"Prohibit programs outside the framework from accessing RCore.");
 			}
+		}
+		
+		private static Type FindSubclassOf<T>()
+		{
+			var baseType = typeof(T);
+			return InternalFindSubclasses(baseType, single: true).FirstOrDefault();
+		}
+
+		private static List<Type> FindSubclassesOf<T>()
+		{
+			var baseType = typeof(T);
+			return InternalFindSubclasses(baseType, single: false);
+		}
+
+		private static List<Type> InternalFindSubclasses(Type baseType, bool single)
+		{
+			var result = new List<Type>();
+			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+			foreach (var assembly in assemblies)
+			{
+				var types = assembly.GetTypes();
+
+				foreach (var type in types)
+				{
+					if (type.IsSubclassOf(baseType) && !type.IsAbstract)
+					{
+						result.Add(type);
+						if (single)
+						{
+							return result;
+						}
+					}
+				}
+			}
+
+			return result.Count == 0 ? null : result;
 		}
 	}
 	

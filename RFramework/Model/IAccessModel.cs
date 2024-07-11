@@ -7,6 +7,6 @@ namespace RFramework
 	
 	public static class AccessModelExtension
 	{
-		public static T GetModel<T>(this IAccessModel _model) where T : RModel  => RCore.Get<T>();
+		public static T GetModel<T>(this IAccessModel _model) where T : RModel  => RCore.Access<T>();
 	}
 }
