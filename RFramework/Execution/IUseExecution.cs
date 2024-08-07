@@ -6,8 +6,9 @@ namespace RFramework
 	}
 	
 	public static class UseExecutionExtension
-	{
-		[AuthorizedAccessRCore]
+	{ 
 		public static void UseExe(this IUseExecution _module, RExecution _rExecution) => RCore.UseExe(_rExecution);
+		
+		public static T UseExe<T>(this IUseExecution _module, RExecution<T> _rExecution) => RCore.UseExe(_rExecution);
 	}
 }

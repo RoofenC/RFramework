@@ -1,19 +1,20 @@
+#region
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.VisualScripting;
+
+#endregion
 
 namespace RFramework
 {
 	public static class RCore
 	{
-		private static Dictionary<Type, Object> mObjects = new Dictionary<Type, object>();
-
-		static RCore()
-		{
-			Entry();
-		}
+		private static Dictionary<Type, Object> m_Objects = new Dictionary<Type, object>();
+		private static StructEventSystem m_Event = new StructEventSystem();
 		
+		static RCore() => Entry();
+
 		private static void Entry()
 		{
 			var type = FindSubclassesOf<ROverall>();
@@ -27,10 +28,8 @@ namespace RFramework
 			}
 		}
 
-		public static void SignUp<T>()
+		public static void In<T>() where T : IRoofen
 		{
-			Authorized();
-
 			var type = FindSubclassOf<T>();
 
 			if (type == null)
@@ -43,7 +42,7 @@ namespace RFramework
 				throw new InvalidOperationException($"The type {type.FullName} must be a subclass of RSystem or RModel.");
 			}
 			
-			if (mObjects.ContainsKey(type))
+			if (m_Objects.ContainsKey(type))
 			{
 				throw new InvalidOperationException($"The type {type} has already signed up.");
 			}
@@ -52,69 +51,36 @@ namespace RFramework
 
 			if (entity is IRInitWill init) init.OnInit();
 
-			mObjects.Add(type, (T)entity);
+			m_Objects.Add(typeof(T), (T)entity);
 		}
 
-		public static T Access<T>() where T : class, IRoofen
+		public static T Access<T>() where T : IRoofen
 		{
-			Authorized();
-			
 			var type = typeof(T);
 
-			if (!mObjects.ContainsKey(type))
+			if (!m_Objects.ContainsKey(type))
 			{
 				throw new InvalidOperationException($"The type {type} is not signed up.");
 			}
 
-			return mObjects[type] as T;
+			return (T)m_Objects[type];
 		}
 
-		public static T UseModule<T>(RModule<T> _rModule)
-		{
-			Authorized();
-			
-			return _rModule.Do();
-		}
-		
-		public static void UseModule(RModule _rModule)
-		{
-			Authorized();
-			
-			_rModule.Do();
-		}
-		
-		public static void UseExe(RExecution _rExecution)
-		{
-			Authorized();
-			
-			_rExecution.Do();
-		}
-		
-		public static T UseRec<T>(RReception<T> _rReception)
-		{
-			Authorized();
-			
-			return _rReception.Do();
-		}
-		
-		private static void Authorized()
-		{
-			var stackTrace = new System.Diagnostics.StackTrace();
-			var callingMethod = stackTrace.GetFrame(1).GetMethod();
-			var declaringType = callingMethod.DeclaringType;
+		public static T UseModule<T>(RModule<T> _rModule) => _rModule.Do();
 
-			var authorize =  declaringType.GetCustomAttributes(typeof(AuthorizedAccessRCoreAttribute), true).Length > 0
-			       || callingMethod.GetCustomAttributes(typeof(AuthorizedAccessRCoreAttribute), true).Length > 0;
+		public static void UseModule(RModule _rModule) => _rModule.Do();
 
-			if (!authorize)
-			{
-				throw new InvalidOperationException($"Prohibit programs outside the framework from accessing RCore.");
-			}
-		}
-		
+		public static void UseExe(RExecution _rExecution) => _rExecution.Do();
+
+		public static T UseExe<T>(RExecution<T> _rExecution) => _rExecution.Do();
+
+
+		public static T UseRec<T>(RReception<T> _rReception) => _rReception.Do();
+
 		private static Type FindSubclassOf<T>()
 		{
 			var baseType = typeof(T);
+
 			return InternalFindSubclasses(baseType, single: true).FirstOrDefault();
 		}
 
@@ -135,7 +101,8 @@ namespace RFramework
 
 				foreach (var type in types)
 				{
-					if (type.IsSubclassOf(baseType) && !type.IsAbstract)
+					if ((baseType.IsInterface && baseType.IsAssignableFrom(type) && type.IsClass && !type.IsAbstract) ||
+					    (type.IsSubclassOf(baseType) && !type.IsAbstract))
 					{
 						result.Add(type);
 						if (single)
@@ -148,10 +115,11 @@ namespace RFramework
 
 			return result.Count == 0 ? null : result;
 		}
-	}
-	
-	[AttributeUsage(AttributeTargets.Method)]
-	public class AuthorizedAccessRCoreAttribute : Attribute
-	{
+		
+		public static void InEvent<T>(Action<T> onEvent) where T : struct => m_Event.SignUp(onEvent);
+
+		public static void OutEvent<T>(Action<T> onEvent) where T : struct => m_Event.LogOut(onEvent);
+
+		public static void UseEvent<T>(T eventData) where T : struct => m_Event.Use(eventData);
 	}
 }

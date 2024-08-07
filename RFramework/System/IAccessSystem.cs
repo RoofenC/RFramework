@@ -7,6 +7,6 @@ namespace RFramework
 	
 	public static class AccessSystemExtension
 	{
-		public static T GetSystem<T>(this IAccessModel _model) where T : RSystem  => RCore.Access<T>();
+		public static T AccessSystem<T>(this IAccessSystem _model) where T : IRoofen  => RCore.Access<T>();
 	}
 }
